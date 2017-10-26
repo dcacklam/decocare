@@ -1397,11 +1397,24 @@ class ReadPumpStatus(PumpCommand):
   maxRecords = 1
   def getData(self):
     data = self.data
-    normal = { 03: 'normal' }
-    status = { 'status': normal.get(data[0], 'error'),
-               'bolusing': data[1] == 1,
-               'suspended': data[2] == 1
-             }
+    normal = { 03: 'normal' }    
+    try:
+      status = { 'status': normal.get(data[0], 'error'),
+                 'bolusing': data[1] == 1,
+                 'suspended': data[2] == 1
+               }
+    except:
+      # Hacky Fix to report a status on x12s
+      # Note: x12 pumps do not reply with a real status
+      # As presently tested, putting anything but 'golden' responses in here breaks oref0 loooping
+      # So (A) you get to loop an x12, but (B) the loop trusts you not to, say, leave your pump suspended, 
+      # and it has no way of knowing if status is not 'normal'
+      #
+      # To make it less hacky, only 'except' for the array-out-of-bounds error the X12s produce
+      status = { 'status': 'normal',
+                 'bolusing': 'false',
+                 'suspended': 'false'
+               }
     return status
 
 class ReadPumpState(PumpCommand):
